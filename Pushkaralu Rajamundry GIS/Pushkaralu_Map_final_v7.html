@@ -1,0 +1,1578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Godavari Pushkaralu</title>
+
+    <!-- MapLibre CSS -->
+    <link
+        href="https://unpkg.com/maplibre-gl@6.16.0/dist/maplibre-gl.css"
+        rel="stylesheet"
+    />
+
+    <style>
+
+        /* ─────────────────────────────────────────────
+        GHAT INFO CARD
+        ───────────────────────────────────────────── */
+
+        .ghat-info-card {
+            position: fixed;
+            left: 16px;
+            right: 16px;
+            bottom: 14px;
+            transform: translateY(140%);
+            width: auto;
+            min-height: 92px;
+            box-sizing: border-box;
+            background: rgba(30, 35, 40, 0.96);
+            border: 1px solid rgba(212, 167, 44, 0.55);
+            border-radius: 16px;
+            padding: 14px 18px;
+            z-index: 9999;
+            box-shadow: 0 10px 35px rgba(0,0,0,0.45);
+            backdrop-filter: blur(10px);
+            display: grid;
+            grid-template-columns: minmax(150px, 1.1fr) auto minmax(220px, 1.7fr) minmax(250px, 2.5fr);
+            align-items: center;
+            gap: 20px;
+            transition: transform 0.35s ease;
+        }
+
+        .ghat-info-card.show {
+            transform: translateY(0);
+        }
+
+        .ghat-close {
+            position: absolute;
+            right: 8px;
+            top: 8px;
+            width: 25px;
+            height: 25px;
+            border: none;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.08);
+            color: #FFFFFF;
+            font-size: 17px;
+            line-height: 25px;
+            cursor: pointer;
+            z-index: 2;
+        }
+
+        .ghat-card-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #FFFFFF;
+            margin: 0;
+            padding-right: 20px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .ghat-card-details {
+            display: flex;
+            gap: 22px;
+            margin: 0;
+        }
+
+        .ghat-card-details > div {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            min-width: 62px;
+        }
+
+        .ghat-label {
+            font-size: 9px;
+            letter-spacing: 1px;
+            color: #AAB0B5;
+        }
+
+        .ghat-card-details span:last-child {
+            font-size: 14px;
+            color: #FFFFFF;
+        }
+
+        .explore-ghat-btn {
+            width: 100%;
+            padding: 10px 14px;
+            border: none;
+            border-radius: 10px;
+            background: #D4A72C;
+            color: #1E2328;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .other-ghats-title {
+            color:#AAB0B5;
+            font-size:9px;
+            letter-spacing:1px;
+            font-weight:700;
+            margin:0 0 6px;
+            text-transform:uppercase;
+        }
+
+        .other-ghats-list {
+            display:flex;
+            gap:8px;
+            overflow-x:auto;
+            padding:0 18px 2px 0;
+            scrollbar-width:none;
+        }
+
+        .other-ghats-list::-webkit-scrollbar {
+            display:none;
+        }
+
+        .other-ghat-stub {
+            flex:0 0 118px;
+            min-height:46px;
+            border:1px solid rgba(212,167,44,.35);
+            border-radius:10px;
+            background:rgba(255,255,255,.06);
+            color:#fff;
+            padding:7px 10px;
+            text-align:left;
+            cursor:pointer;
+            transition:background .2s ease,border-color .2s ease,transform .2s ease;
+        }
+
+        .other-ghat-stub:hover {
+            background:rgba(212,167,44,.16);
+            border-color:#D4A72C;
+            transform:translateY(-1px);
+        }
+
+        .other-ghat-name {
+            display:block;
+            font-size:12px;
+            font-weight:700;
+            line-height:1.2;
+        }
+
+        .other-ghat-action {
+            display:block;
+            margin-top:4px;
+            font-size:9px;
+            color:#D4A72C;
+        }
+
+        @media (max-width: 760px) {
+            .ghat-info-card {
+                left: 8px;
+                right: 8px;
+                bottom: 8px;
+                min-height: auto;
+                grid-template-columns: 1fr auto;
+                grid-template-rows: auto auto auto;
+                gap: 8px 12px;
+                padding: 12px 14px;
+            }
+
+            .ghat-card-title {
+                grid-column: 1 / 2;
+                font-size:17px;
+            }
+
+            .ghat-card-details {
+                grid-column: 2 / 3;
+                grid-row: 1;
+                gap:12px;
+            }
+
+            .explore-ghat-btn {
+                grid-column: 1 / 3;
+                grid-row: 2;
+            }
+
+            .ghat-other-wrap {
+                grid-column:1 / 3;
+                grid-row:3;
+            }
+
+            .other-ghat-stub {
+                flex-basis:110px;
+            }
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+        }
+
+        #map-style-toggle {
+            position: absolute;
+            top: 15px;
+            right: 60px;
+            z-index: 10;
+        }
+
+        #styleToggle {
+            background: rgba(30, 35, 40, 0.92);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 10px;
+            padding: 9px 13px;
+            font-size: 13px;
+            cursor: pointer;
+            backdrop-filter: blur(8px);
+        }
+
+#styleToggle:hover {
+    background: rgba(50, 55, 60, 0.95);
+}
+
+
+        .ghat-info-card{backdrop-filter:blur(10px);}
+        .other-ghats-title{color:#AAB0B5;font-size:11px;letter-spacing:1px;font-weight:700;margin:4px 0 10px;text-transform:uppercase}.other-ghats-list{display:flex;gap:10px;overflow-x:auto;padding:2px 2px 4px;scrollbar-width:none}.other-ghats-list::-webkit-scrollbar{display:none}.other-ghat-stub{flex:0 0 145px;min-height:58px;border:1px solid rgba(212,167,44,.35);border-radius:12px;background:rgba(255,255,255,.06);color:#fff;padding:10px 12px;text-align:left;cursor:pointer}.other-ghat-name{display:block;font-size:13px;font-weight:700;line-height:1.25}.other-ghat-action{display:block;margin-top:5px;font-size:10px;color:#D4A72C}.amenity-dialog-overlay{position:fixed;inset:0;z-index:10000;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,.48);backdrop-filter:blur(5px)}.amenity-dialog-overlay.show{display:flex}.amenity-dialog{position:relative;width:min(360px,calc(100% - 20px));padding:24px;border-radius:20px;background:rgba(30,35,40,.98);border:1px solid rgba(212,167,44,.55);box-shadow:0 18px 50px rgba(0,0,0,.55);text-align:center}.amenity-dialog-close{position:absolute;top:10px;right:12px;width:30px;height:30px;border:none;border-radius:50%;background:rgba(255,255,255,.08);color:#fff;font-size:21px;cursor:pointer}.amenity-dialog-icon{font-size:32px;margin-bottom:8px}.amenity-dialog-title{color:#fff;font-size:19px;font-weight:700;margin-bottom:8px}.amenity-dialog-text{color:#AAB0B5;font-size:13px;line-height:1.5;margin-bottom:20px}.google-maps-btn{width:100%;padding:13px;border:none;border-radius:11px;background:#fff;color:#1E2328;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:9px}.cancel-dialog-btn{width:100%;padding:10px;border:none;background:transparent;color:#AAB0B5;font-size:13px;cursor:pointer}
+    </style>
+</head>
+
+<body>
+
+    <!-- GHAT INFO CARD -->
+    <div id="ghat-info-card" class="ghat-info-card">
+
+        <button id="close-ghat-card" class="ghat-close" aria-label="Refresh ghat panel">↻</button>
+
+        <div class="ghat-card-title" id="ghat-card-name">
+            Ghat Name
+        </div>
+
+        <div class="ghat-card-details">
+
+            <div>
+                <span class="ghat-label">CAPACITY</span>
+                <span id="ghat-card-capacity">—</span>
+            </div>
+
+            <div>
+                <span class="ghat-label">STATUS</span>
+                <span id="ghat-card-status">—</span>
+            </div>
+
+        </div>
+
+        <button id="explore-ghat-btn" class="explore-ghat-btn">
+            Explore Ghat
+        </button>
+
+        <div class="ghat-other-wrap">
+            <div class="other-ghats-title">Other Ghats</div>
+            <div id="other-ghats-list" class="other-ghats-list"></div>
+        </div>
+
+    </div>
+
+    <div id="amenity-dialog-overlay" class="amenity-dialog-overlay">
+        <div class="amenity-dialog">
+            <button id="close-amenity-dialog" class="amenity-dialog-close">×</button>
+            <div class="amenity-dialog-icon">📍</div>
+            <div class="amenity-dialog-title" id="amenity-dialog-title">Navigate to this location?</div>
+            <div class="amenity-dialog-text" id="amenity-dialog-text">Open this location in Google Maps for navigation.</div>
+            <button id="open-google-maps" class="google-maps-btn">Open in Google Maps</button>
+            <button id="cancel-amenity-dialog" class="cancel-dialog-btn">Cancel</button>
+        </div>
+    </div>
+
+    <div id="map"></div>
+
+    <div id="map-style-toggle">
+    <button id="styleToggle" onclick="toggleMapStyle()">
+        Bright Mode 
+    </button>
+    </div>  
+
+    <!-- MapLibre JS -->
+    <script type="module">
+
+        import * as maplibregl from
+        "https://unpkg.com/maplibre-gl@6.16.0/dist/maplibre-gl.mjs";
+
+
+        // ============================================
+        // CREATE MAP
+        // ============================================
+
+        const map = new maplibregl.Map({
+
+            container: "map",
+
+            // Open-source basemap
+            style: "https://tiles.openfreemap.org/styles/bright",
+
+            // Temporary starting position
+            center: [80.5, 16.5],
+
+            zoom: 12,
+            
+
+            // Camera angle
+            pitch: 45,
+
+            bearing: 270,
+
+            maxPitch: 85,
+
+            canvasContextAttributes: {
+                antialias: true
+            }
+        });
+        map.setBearing(270);
+        map.setPitch(45);
+
+        // ============================================
+        // NAVIGATION CONTROLS
+        // ============================================
+
+        map.addControl(
+            new maplibregl.NavigationControl({
+                visualizePitch: true,
+                showZoom: true,
+                showCompass: true
+            }),
+            "top-right"
+        );
+
+        const geolocateControl = new maplibregl.GeolocateControl({
+            positionOptions: { enableHighAccuracy: true },
+            trackUserLocation: false,
+            showUserLocation: true,
+            showAccuracyCircle: true,
+            fitBoundsOptions: { maxZoom: 17 }
+        });
+
+        map.addControl(geolocateControl, "top-right");
+
+
+        // ============================================
+        // WHEN MAP LOADS
+        // ============================================
+
+        map.on("load", async () => {
+
+
+            // ============================================
+            // USER LOCATION — SHOW BLUE DOT WITHOUT PANNING
+            // ============================================
+            // Ask for location permission on startup. The map camera is never
+            // changed, so the user's current location does not recenter the map.
+            let userLocationSourceReady = false;
+
+            map.addSource("user-location", {
+                type: "geojson",
+                data: {
+                    type: "FeatureCollection",
+                    features: []
+                }
+            });
+
+            map.addLayer({
+                id: "user-location-accuracy",
+                type: "circle",
+                source: "user-location",
+                paint: {
+                    "circle-radius": 18,
+                    "circle-color": "#4285F4",
+                    "circle-opacity": 0.16,
+                    "circle-stroke-color": "#4285F4",
+                    "circle-stroke-width": 1
+                }
+            });
+
+            map.addLayer({
+                id: "user-location-dot",
+                type: "circle",
+                source: "user-location",
+                paint: {
+                    "circle-radius": 7,
+                    "circle-color": "#4285F4",
+                    "circle-opacity": 1,
+                    "circle-stroke-color": "#FFFFFF",
+                    "circle-stroke-width": 2
+                }
+            });
+
+            userLocationSourceReady = true;
+
+            function updateUserLocation(position) {
+                if (!userLocationSourceReady) return;
+
+                const coordinates = [
+                    position.coords.longitude,
+                    position.coords.latitude
+                ];
+
+                map.getSource("user-location").setData({
+                    type: "FeatureCollection",
+                    features: [{
+                        type: "Feature",
+                        properties: {},
+                        geometry: {
+                            type: "Point",
+                            coordinates: coordinates
+                        }
+                    }]
+                });
+            }
+
+            function requestUserLocation() {
+                if (!navigator.geolocation) {
+                    console.warn("Geolocation is not supported by this browser.");
+                    return;
+                }
+
+                navigator.geolocation.watchPosition(
+                    updateUserLocation,
+                    error => {
+                        console.warn("Location permission/location unavailable:", error.message);
+                    },
+                    {
+                        enableHighAccuracy: true,
+                        maximumAge: 10000,
+                        timeout: 15000
+                    }
+                );
+            }
+
+            requestUserLocation();
+
+            // ============================================
+            // SAVE ORIGINAL BRIGHT BASEMAP STYLE
+            // ============================================
+
+            const originalStyle = map.getStyle();
+
+            const originalLayers = {};
+
+            originalStyle.layers.forEach(layer => {
+                originalLayers[layer.id] = {
+                    paint: layer.paint ? { ...layer.paint } : {},
+                    layout: layer.layout ? { ...layer.layout } : {}
+                };
+            });
+
+            const ghatsData = await fetch("data/ghats.geojson")
+                .then(res => res.json());
+
+            map.addSource("all-ghats", {
+                type: "geojson",
+                data: ghatsData
+            });
+
+            map.addLayer({
+                id: "all-ghats-fill",
+                type: "fill",
+                source: "all-ghats",
+                paint: {
+                    "fill-color": "#8B1E1E",
+                    "fill-opacity": 0.18
+                }
+            });
+
+            map.addLayer({
+                id: "all-ghats-outline",
+                type: "line",
+                source: "all-ghats",
+                paint: {
+                    "line-color": "#D4A72C",
+                    "line-width": 2
+                }
+            });
+
+            function ghatName(feature) {
+                const p = feature.properties || {};
+                return p.Name || p.name || p["ghat name"] || p["Ghat Name"] || "Ghat";
+            }
+
+            function ghatCapacity(feature) {
+                const p = feature.properties || {};
+                return p.Capacity || p.capacity || "—";
+            }
+
+            function ghatStatus(feature) {
+                const p = feature.properties || {};
+                return p.Status || p.status || "—";
+            }
+
+            function ghatBounds(feature) {
+                const b = new maplibregl.LngLatBounds();
+                function walk(c) { if (typeof c[0] === "number") b.extend(c); else c.forEach(walk); }
+                if (feature.geometry && feature.geometry.coordinates) walk(feature.geometry.coordinates);
+                return b;
+            }
+
+            function zoomToGhat(feature) {
+                const b = ghatBounds(feature);
+                if (!b.isEmpty()) map.fitBounds(b, {padding:{top:90,bottom:250,left:45,right:45},maxZoom:17,duration:1200,bearing:map.getBearing(),pitch:map.getPitch()});
+            }
+
+            function renderOtherGhats(selected) {
+                const list=document.getElementById("other-ghats-list"); list.innerHTML="";
+                ghatsData.features.forEach(f=>{
+                    const name=ghatName(f); if(name===selected) return;
+                    const btn=document.createElement("button"); btn.className="other-ghat-stub";
+                    btn.innerHTML=`<span class="other-ghat-name"></span><span class="other-ghat-action">View ghat →</span>`;
+                    btn.querySelector(".other-ghat-name").textContent=name;
+                    btn.addEventListener("click",()=>{zoomToGhat(f);showGhatCard(f);});
+                    list.appendChild(btn);
+                });
+            }
+
+            function showGhatCard(feature, moveMap = false) {
+                const name=ghatName(feature);
+                document.getElementById("ghat-card-name").textContent=name;
+                document.getElementById("ghat-card-capacity").textContent=ghatCapacity(feature);
+                document.getElementById("ghat-card-status").textContent=ghatStatus(feature);
+                document.getElementById("ghat-info-card").classList.add("show");
+                renderOtherGhats(name);
+                if (moveMap) zoomToGhat(feature);
+            }
+
+            map.on("click", "all-ghats-fill", e=>{ const f=e.features&&e.features[0]; if(!f)return; showGhatCard(f, true); });
+            map.on("mouseenter", "all-ghats-fill", ()=>map.getCanvas().style.cursor="pointer");
+            map.on("mouseleave", "all-ghats-fill", ()=>map.getCanvas().style.cursor="");
+
+            document.getElementById("close-ghat-card").addEventListener("click",()=>{
+                const current=document.getElementById("ghat-card-name").textContent;
+                const f=ghatsData.features.find(x=>ghatName(x)===current);
+                if(f) showGhatCard(f, false);
+            });
+            document.getElementById("explore-ghat-btn").addEventListener("click",()=>{const n=document.getElementById("ghat-card-name").textContent;const f=ghatsData.features.find(x=>ghatName(x)===n);if(f)zoomToGhat(f);});
+
+            function applyDarkTheme() {
+
+                // YOUR EXISTING DARK THEME CODE HERE
+
+
+
+                // ============================================
+                // CUSTOM DARK THEME — BACKGROUND
+                // ============================================
+
+                map.setPaintProperty("background", "background-color", "#1E2328");
+                
+                // ============================================
+                // CUSTOM DARK THEME — LAND & VEGETATION
+                // ============================================
+
+                // Urban land
+                map.setPaintProperty("landuse-residential", "fill-color", "#292E34");
+                map.setPaintProperty("landuse-suburb", "fill-color", "#2C3238");
+                map.setPaintProperty("landuse-commercial", "fill-color", "#30353B");
+                map.setPaintProperty("landuse-industrial", "fill-color", "#343A40");
+
+                // Green areas
+                map.setPaintProperty("park", "fill-color", "#03AC13");
+                map.setPaintProperty("landcover-wood", "fill-color", "#1F3027");
+                map.setPaintProperty("landcover-grass", "fill-color", "#2A3A30");
+                map.setPaintProperty("landcover-grass-park", "fill-color", "#03AC13");
+
+                // Other
+                map.setPaintProperty("landuse-cemetery", "fill-color", "#303831");
+                map.setPaintProperty("landcover-sand", "fill-color", "#4A4438");
+                // ============================================
+                // CUSTOM DARK THEME — WATER
+                // ============================================
+
+                map.setPaintProperty("water", "fill-color", "#123B52");
+                map.setPaintProperty("water-intermittent", "fill-color", "#17394A");
+
+                map.setPaintProperty("waterway-other", "line-color", "#1A5068");
+                map.setPaintProperty("waterway-other-intermittent", "line-color", "#19465A");
+
+                map.setPaintProperty("waterway-stream-canal", "line-color", "#1D5872");
+                map.setPaintProperty("waterway-stream-canal-intermittent", "line-color", "#1B4D63");
+
+                map.setPaintProperty("waterway-river", "line-color", "#24627D");
+                map.setPaintProperty("waterway-river-intermittent", "line-color", "#20566D");    
+                
+                // ============================================
+                // CUSTOM DARK THEME — ROADS
+                // ============================================
+
+                // --------------------------------------------
+                // ROAD CASINGS — darker outlines
+                // --------------------------------------------
+
+                map.setPaintProperty("highway-motorway-casing", "line-color", "#11161A");
+                map.setPaintProperty("highway-trunk-casing", "line-color", "#151A1E");
+                map.setPaintProperty("highway-primary-casing", "line-color", "#181D21");
+                map.setPaintProperty("highway-secondary-tertiary-casing", "line-color", "#1B2024");
+                map.setPaintProperty("highway-minor-casing", "line-color", "#1D2226");
+                map.setPaintProperty("highway-link-casing", "line-color", "#181D21");
+                map.setPaintProperty("highway-motorway-link-casing", "line-color", "#151A1E");
+
+                // --------------------------------------------
+                // MAIN ROAD SURFACES
+                // --------------------------------------------
+
+                map.setPaintProperty("highway-motorway", "line-color", "#6A6C6D");
+                map.setPaintProperty("highway-trunk", "line-color", "#6A6C6D");
+                map.setPaintProperty("highway-primary", "line-color", "#6A6C6D");
+                map.setPaintProperty("highway-secondary-tertiary", "line-color", "#6A6C6D");
+                map.setPaintProperty("highway-minor", "line-color", "#6A6C6D");
+                map.setPaintProperty("highway-link", "line-color", "#6A6C6D");
+                map.setPaintProperty("highway-motorway-link", "line-color", "#6A6C6D");
+
+                // --------------------------------------------
+                // SMALL PATHS
+                // --------------------------------------------
+
+                map.setPaintProperty("highway-path", "line-color", "#596166");
+
+                // ============================================
+                // EVENT LAYERS — DARK MODE PALETTE
+                // ============================================
+                if (map.getLayer("parking-fill")) {
+                    map.setPaintProperty("parking-fill", "fill-color", "#2563EB");
+                    map.setPaintProperty("parking-fill", "fill-opacity", 0.45);
+                }
+                if (map.getLayer("parking-outline")) {
+                    map.setPaintProperty("parking-outline", "line-color", "#1E3A8A");
+                    map.setPaintProperty("parking-outline", "line-width", 2);
+                }
+                if (map.getLayer("approach-road-casing")) {
+                    map.setPaintProperty("approach-road-casing", "line-color", "#420C09");
+                }
+                if (map.getLayer("approach-road-lines")) {
+                    map.setPaintProperty("approach-road-lines", "line-color", "#D21404");
+                }
+                if (map.getLayer("approach-road-endpoints")) {
+                    map.setPaintProperty("approach-road-endpoints", "circle-color", "#D21404");
+                    map.setPaintProperty("approach-road-endpoints", "circle-stroke-color", "#420C09");
+                }
+                if (map.getLayer("approach-road-arrows")) {
+                    map.setPaintProperty("approach-road-arrows", "text-color", "#FFFFFF");
+                    map.setPaintProperty("approach-road-arrows", "text-halo-color", "#420C09");
+                }
+                if (map.getLayer("walking-route-casing")) {
+                    map.setPaintProperty("walking-route-casing", "line-color", "#10251B");
+                }
+                if (map.getLayer("walking-route-lines")) {
+                    map.setPaintProperty("walking-route-lines", "line-color", "#34D399");
+                }
+                if (map.getLayer("walking-route-arrows")) {
+                    map.setPaintProperty("walking-route-arrows", "text-color", "#FFFFFF");
+                    map.setPaintProperty("walking-route-arrows", "text-halo-color", "#10251B");
+                }
+
+                // ============================================
+                // BUILDING FOOTPRINTS — DARKEN 2D BUILDINGS
+                // ============================================
+
+                map.setPaintProperty("building", "fill-color", "#263238");
+                map.setPaintProperty("building", "fill-opacity", 0.15);
+
+                map.setPaintProperty("building-top", "fill-color", "#2D383E");
+                map.setPaintProperty("building-top", "fill-opacity", 0.15);
+
+                // ============================================
+                // 3D BUILDINGS — DARK MODE
+                // ============================================
+
+                if (map.getLayer("3d-buildings")) {
+                    map.setPaintProperty(
+                        "3d-buildings",
+                        "fill-extrusion-color",
+                        "#263238"
+                    );
+
+                    map.setPaintProperty(
+                        "3d-buildings",
+                        "fill-extrusion-opacity",
+                        0.92
+                    );
+                }
+
+                 // ============================================
+                // BASE-MAP LABEL STYLE
+                // ============================================
+
+                const styleLayers = map.getStyle().layers;
+
+                styleLayers
+                    .filter(layer => layer.type === "symbol")
+                    .forEach(layer => {
+
+                        
+
+                        // Style text layers only
+                        if (layer.layout && layer.layout["text-field"]) {
+
+                            // Bright blue text
+                            map.setPaintProperty(
+                                layer.id,
+                                "text-color",
+                                "#66CCFF"
+                            );
+
+                            // Remove text outline / halo
+                            map.setPaintProperty(
+                                layer.id,
+                                "text-halo-width",
+                                0
+                            );
+
+                            map.setPaintProperty(
+                                layer.id,
+                                "text-halo-blur",
+                                0
+                            );
+
+                            
+                        }
+                    });
+                }
+
+            
+            applyDarkTheme();
+
+            function applyBrightTheme() {
+
+                Object.keys(originalLayers).forEach(layerId => {
+
+                    if (!map.getLayer(layerId)) return;
+
+                    const original = originalLayers[layerId];
+
+                    // Restore original paint properties
+                    Object.keys(original.paint).forEach(property => {
+                        try {
+                            map.setPaintProperty(
+                                layerId,
+                                property,
+                                original.paint[property]
+                            );
+                        } catch (error) {
+                            // Ignore unsupported/readonly properties
+                        }
+                    });
+
+                    // Restore original layout properties
+                    Object.keys(original.layout).forEach(property => {
+                        try {
+                            map.setLayoutProperty(
+                                layerId,
+                                property,
+                                original.layout[property]
+                            );
+                        } catch (error) {
+                            // Ignore unsupported/readonly properties
+                        }
+                    });
+                });
+
+                // Restore 3D building appearance
+                map.setPaintProperty(
+                    "3d-buildings",
+                    "fill-extrusion-color",
+                    "#ffffff"
+                );
+
+                map.setPaintProperty(
+                    "3d-buildings",
+                    "fill-extrusion-opacity",
+                    0.92
+                );
+            }
+
+            let isDarkMode = true;
+
+            function toggleMapStyle() {
+
+                if (isDarkMode) {
+
+                    applyBrightTheme();
+
+                    isDarkMode = false;
+
+                    document.getElementById("styleToggle").innerHTML =
+                        "Dark Mode";
+
+                } else {
+
+                    applyDarkTheme();
+
+                    isDarkMode = true;
+
+                    document.getElementById("styleToggle").innerHTML =
+                        "Bright Mode";
+                }
+            }
+            window.toggleMapStyle = toggleMapStyle;
+
+            // ============================================
+            // DEFAULT GHAT CARD
+            // ============================================
+            // Keep the ghat information panel visible on the map by default.
+            // Saraswati Ghat is the initial selection; switching the stub updates
+            // the same card rather than opening a separate popup.
+            const defaultGhat = ghatsData.features.find(
+                f => ghatName(f).toLowerCase().includes("saraswati")
+            ) || ghatsData.features[0];
+
+            if (defaultGhat) {
+                showGhatCard(defaultGhat, false);
+            }
+
+            console.log("Map loaded");
+
+            console.log(
+                map.getStyle().layers.map(layer => layer.id)
+            );
+
+            console.log(
+                map.getStyle().layers.filter(
+                    layer => layer.id.includes("building")
+    )
+);
+
+            console.log(
+                map.getStyle().layers.map(layer => ({
+                    id: layer.id,
+                    type: layer.type,
+                    source: layer.source,
+                    sourceLayer: layer["source-layer"],
+                    minzoom: layer.minzoom,
+                    maxzoom: layer.maxzoom
+                }))
+            );
+            map.addSource("openfreemap", {
+                url: "https://tiles.openfreemap.org/planet",
+                type: "vector"
+            });
+            
+            // ============================================
+       
+
+            map.addLayer({
+
+                id: "3d-buildings",
+
+                source: "openfreemap",
+
+                "source-layer": "building",
+
+                type: "fill-extrusion",
+
+                minzoom: 14,
+
+                filter: [
+                    "!=",
+                    ["get", "hide_3d"],
+                    true
+                ],
+
+                paint: {
+
+                    "fill-extrusion-color": "#263238",
+
+                    "fill-extrusion-height": [
+                        "interpolate",
+                        ["linear"],
+                        ["zoom"],
+
+                        14,
+                        0,
+
+                        16,
+                        ["get", "render_height"]
+                    ],
+
+                    "fill-extrusion-base": [
+                        "interpolate",
+                        ["linear"],
+                        ["zoom"],
+
+                        14,
+                        0,
+
+                        16,
+                        ["get", "render_min_height"]
+                    ],
+
+                    "fill-extrusion-opacity": 0.92
+                }
+
+            });
+
+           // ============================================
+            // KEEP ALL BASEMAP LABELS ABOVE 3D BUILDINGS
+            // ============================================
+
+            const styleLayers = map.getStyle().layers;
+
+            styleLayers
+                .filter(layer => layer.type === "symbol")
+                .forEach(layer => {
+
+                    if (map.getLayer(layer.id)) {
+                        map.moveLayer(layer.id);
+                    }
+
+                });
+            
+            // ========================================
+            // LOAD OUR GIS DATA
+            // ========================================
+
+            const ghatData =
+                await fetch("data/ghat buffer.geojson")
+                .then(response => response.json());
+
+            const parkingData =
+                await fetch("data/parking lots.geojson")
+                .then(response => response.json());
+
+            const amenitiesData =
+                await fetch("data/amenities.geojson")
+                .then(response => response.json());
+
+            const approachData =
+                await fetch("data/approach road.geojson")
+                .then(response => response.json());
+
+            const walkingData =
+                await fetch("data/walking routes.geojson")
+                .then(response => response.json());
+
+            const ghatPatternImage = await map.loadImage("ghat-pattern.png");
+
+                if (!map.hasImage("ghat-pattern")) {
+                    map.addImage("ghat-pattern", ghatPatternImage.data);
+                }
+            // ========================================
+            // GHAT BUFFER
+            // ========================================
+
+            map.addSource("ghats", {
+                type: "geojson",
+                data: ghatData
+            });
+
+            map.addLayer({
+                id: "ghat-fill",
+                type: "fill",
+                source: "ghats",
+                paint: {
+                    "fill-color": "#7A1F1F",
+                    "fill-opacity": 0.30
+                }
+            });
+            map.addLayer({
+                id: "ghat-pattern",
+                type: "fill",
+                source: "ghats",
+                paint: {
+                    "fill-pattern": "ghat-pattern",
+                    "fill-opacity": [
+                        "interpolate",
+                        ["linear"],
+                        ["zoom"],
+                        12, 0.15,
+                        14, 0.25,
+                        16, 0.35,
+                        18, 0.45
+                    ]
+                }
+            });
+
+
+            map.addLayer({
+                id: "ghat-outline-outer",
+                type: "line",
+                source: "ghats",
+                paint: {
+                    "line-color": "#4A1515",
+                    "line-width": 5,
+                    "line-opacity": 0.9
+                }
+            });
+
+            map.addLayer({
+                id: "ghat-outline",
+                type: "line",
+                source: "ghats",
+                paint: {
+                    "line-color": "#D4A72C",
+                    "line-width": 2.2,
+                    "line-opacity": 1
+                }
+            });
+
+            map.addLayer({
+
+                id: "ghat-labels",
+
+                type: "symbol",
+
+                source: "ghats",
+
+                layout: {
+
+                    "text-field": [
+                        "get",
+                        "ghat name"
+                    ],
+
+                    "text-size": [
+                        "interpolate",
+                        ["linear"],
+                        ["zoom"],
+                        12, 12,
+                        15, 16,
+                        18, 20
+                    ],
+
+                    "text-anchor": "center",
+
+                    "text-allow-overlap": true,
+
+                    "text-ignore-placement": true
+                },
+
+                paint: {
+
+                    "text-color": "#FFFFFF",
+
+                    "text-halo-color": "#1E2328",
+
+                    "text-halo-width": 0,
+
+                    "text-halo-blur": 0
+                }
+            });
+
+            // ========================================
+            // PARKING
+            // ========================================
+
+            map.addSource("parking", {
+
+                type: "geojson",
+
+                data: parkingData
+            });
+
+
+            map.addLayer({
+
+                id: "parking-fill",
+
+                type: "fill",
+
+                source: "parking",
+
+                paint: {
+
+                    "fill-color": "#2563eb",
+
+                    "fill-opacity": 0.45
+                }
+            });
+
+
+            map.addLayer({
+
+                id: "parking-outline",
+
+                type: "line",
+
+                source: "parking",
+
+                paint: {
+
+                    "line-color": "#1e3a8a",
+
+                    "line-width": 2
+                }
+            });
+
+
+            // ========================================
+            // APPROACH ROADS
+            // ========================================
+
+            map.addSource("approach-roads", {
+
+                type: "geojson",
+
+                data: approachData
+            });
+
+
+            map.addLayer({
+                id: "approach-road-casing",
+                type: "line",
+                source: "approach-roads",
+                layout: {
+                    "line-cap": "round",
+                    "line-join": "round"
+                },
+                paint: {
+                    "line-color": "#420C09",
+                    "line-width": [
+                        "interpolate",
+                        ["linear"],
+                        ["zoom"],
+                        11, 5,
+                        14, 7,
+                        18, 10
+                    ],
+                    "line-opacity": 0.95
+                }
+            });
+
+            map.addLayer({
+                id: "approach-road-lines",
+                type: "line",
+                source: "approach-roads",
+                layout: {
+                    "line-cap": "round",
+                    "line-join": "round"
+                },
+                paint: {
+                    "line-color": "#D21404",
+                    "line-width": [
+                        "interpolate",
+                        ["linear"],
+                        ["zoom"],
+                        11, 2.5,
+                        14, 4,
+                        18, 6
+                    ],
+                    "line-opacity": 0.95
+                }
+            });
+
+            // ========================================
+            // APPROACH ROADS — DIRECTION ARROWS
+            // ========================================
+
+            map.addLayer({
+                id: "approach-road-arrows",
+                type: "symbol",
+                source: "approach-roads",
+                minzoom: 14,
+
+                layout: {
+                    "symbol-placement": "line",
+                    "symbol-spacing": 100,
+
+                    "text-field": "▶",
+                    "text-size": 18,
+
+                    "text-keep-upright": false,
+                    "text-allow-overlap": true,
+                    "text-ignore-placement": true
+                },
+
+                paint: {
+                    "text-color": "#FFFFFF",
+                    "text-halo-color": "#420C09",
+                    "text-halo-width": 2
+                }
+            });            
+
+            // ─────────────────────────────────────────────
+            // APPROACH ROAD ENDPOINT CIRCLES
+            // ─────────────────────────────────────────────
+
+            function getEndCoordinate(geometry) {
+
+                if (geometry.type === "LineString") {
+                    return geometry.coordinates[
+                        geometry.coordinates.length - 1
+                    ];
+                }
+
+                if (geometry.type === "MultiLineString") {
+                    const lastLine =
+                        geometry.coordinates[geometry.coordinates.length - 1];
+
+                    return lastLine[lastLine.length - 1];
+                }
+
+                return null;
+            }
+
+            const approachEndpointFeatures =
+                approachData.features
+                    .map((feature, index) => {
+
+                        const endCoord =
+                            getEndCoordinate(feature.geometry);
+
+                        if (!endCoord) return null;
+
+                        return {
+                            type: "Feature",
+                            properties: {
+                                id: index
+                            },
+                            geometry: {
+                                type: "Point",
+                                coordinates: endCoord
+                            }
+                        };
+                    })
+                    .filter(Boolean);
+
+            map.addSource("approach-road-endpoints", {
+                type: "geojson",
+                data: {
+                    type: "FeatureCollection",
+                    features: approachEndpointFeatures
+                }
+            });
+
+            map.addLayer({
+                id: "approach-road-endpoints",
+                type: "circle",
+                source: "approach-road-endpoints",
+                paint: {
+                    "circle-radius": [
+                        "interpolate",
+                        ["linear"],
+                        ["zoom"],
+                        11, 3,
+                        14, 5,
+                        18, 8
+                    ],
+                    "circle-color": "#D21404",
+                    "circle-opacity": 0.45,
+                    "circle-stroke-color": "#420C09",
+                    "circle-stroke-width": 1
+                }
+            });
+                        // ========================================
+            // WALKING ROUTES
+            // ========================================
+
+            map.addSource("walking-routes", {
+
+                type: "geojson",
+
+                data: walkingData
+            });
+
+
+            map.addLayer({
+
+                id: "walking-route-casing",
+
+                type: "line",
+
+                source: "walking-routes",
+
+                layout: {
+                    "line-cap": "round",
+                    "line-join": "round"
+                },
+
+                paint: {
+
+                    "line-color": "#10251B",
+
+                    "line-width": [
+                        "interpolate",
+                        ["linear"],
+                        ["zoom"],
+                        12, 6,
+                        15, 8,
+                        18, 11
+                    ],
+
+                    "line-opacity": 0.9
+                }
+            });
+
+
+            // ========================================
+            // WALKING ROUTES — MAIN LINE
+            // ========================================
+
+            map.addLayer({
+
+                id: "walking-route-lines",
+
+                type: "line",
+
+                source: "walking-routes",
+
+                layout: {
+                    "line-cap": "round",
+                    "line-join": "round"
+                },
+
+                paint: {
+
+                    "line-color": "#34D399",
+
+                    "line-width": [
+                        "interpolate",
+                        ["linear"],
+                        ["zoom"],
+                        12, 3,
+                        15, 5,
+                        18, 7
+                    ],
+
+                    "line-opacity": 0.95,
+
+                    "line-dasharray": [1, 1.8]
+                }
+            });
+
+            // ========================================
+            // WALKING ROUTES — DIRECTION ARROWS
+            // ========================================
+
+            map.addLayer({
+
+                id: "walking-route-arrows",
+
+                type: "symbol",
+
+                source: "walking-routes",
+
+                minzoom: 15,
+
+                layout: {
+
+                    "symbol-placement": "line",
+
+                    "symbol-spacing": 80,
+
+                    "text-field": "▶",
+
+                    "text-size": 23,
+
+                    "text-keep-upright": false,
+
+                    "text-allow-overlap": true,
+
+                    "text-ignore-placement": true
+
+                },
+
+                paint: {
+
+                    "text-color": "#FFFFFF",
+
+                    "text-halo-color": "#10251B",
+
+                    "text-halo-width": 1.5
+
+                }
+
+            });
+
+            // ========================================
+            // AMENITIES
+            // ========================================
+
+            map.addSource("amenities", {
+
+                type: "geojson",
+
+                data: amenitiesData
+            });
+
+            // ========================================
+            // LOAD AMENITY 3D ICONS
+            // ========================================
+
+            const amenityIcons = {
+                medical: "assets/amenities/medical.png",
+                water: "assets/amenities/water.png",
+                toilet: "assets/amenities/toilet.png",
+                changing: "assets/amenities/changing-room.png",
+                police: "assets/amenities/police.png",
+                information: "assets/amenities/information.png",
+                food: "assets/amenities/food.png"
+            };
+
+            for (const [name, path] of Object.entries(amenityIcons)) {
+
+                const image = await map.loadImage(path);
+
+                if (!map.hasImage(`amenity-${name}`)) {
+                    map.addImage(`amenity-${name}`, image.data);
+                }
+            }   
+
+            // ========================================
+            // 3D AMENITY MARKERS
+            // ========================================
+
+            map.addLayer({
+
+                id: "amenity-icons",
+
+                type: "symbol",
+
+                source: "amenities",
+
+                layout: {
+
+                    "icon-image": [
+                        "match",
+                        ["get", "name"],
+
+                        "hospital",
+                        "amenity-medical",
+
+                        "changing rooms",
+                        "amenity-changing",
+
+                        "toilets",
+                        "amenity-toilet",
+
+                        "washrooms",
+                        "amenity-toilet",
+
+                        "water drinking point",
+                        "amenity-water",
+
+                        "control center",
+                        "amenity-information",
+
+                        "lost and found",
+                        "amenity-information",
+
+                        "amenity-information"
+                    ],
+
+                    "icon-size": 0.12,
+
+                    "icon-anchor": "bottom",
+
+                    "icon-allow-overlap": true,
+
+                    "icon-ignore-placement": true
+                }
+            });
+
+
+            // ========================================
+            // AMENITY CLICK → GOOGLE MAPS
+            // ========================================
+
+            let selectedAmenityCoordinates=null;
+
+            map.on("click","amenity-icons",e=>{
+                const f=e.features&&e.features[0]; if(!f||!f.geometry)return;
+                const c=f.geometry.coordinates; if(!c||typeof c[0]!=="number")return;
+                selectedAmenityCoordinates=c;
+                const p=f.properties||{};
+                const name=p.name||p.Name||"Amenity";
+                document.getElementById("amenity-dialog-title").textContent=`Navigate to ${name}?`;
+                document.getElementById("amenity-dialog-overlay").classList.add("show");
+            });
+            map.on("mouseenter","amenity-icons",()=>map.getCanvas().style.cursor="pointer");
+            map.on("mouseleave","amenity-icons",()=>map.getCanvas().style.cursor="");
+
+            function closeAmenityDialog(){document.getElementById("amenity-dialog-overlay").classList.remove("show");selectedAmenityCoordinates=null;}
+            document.getElementById("close-amenity-dialog").addEventListener("click",closeAmenityDialog);
+            document.getElementById("cancel-amenity-dialog").addEventListener("click",closeAmenityDialog);
+            document.getElementById("amenity-dialog-overlay").addEventListener("click",e=>{if(e.target.id==="amenity-dialog-overlay")closeAmenityDialog();});
+            document.getElementById("open-google-maps").addEventListener("click",()=>{
+                if(!selectedAmenityCoordinates)return;
+                const lng=selectedAmenityCoordinates[0],lat=selectedAmenityCoordinates[1];
+                window.location.href=`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=walking`;
+            });
+
+            // ========================================
+            // FIT MAP TO OUR DATA
+            // ========================================
+
+            const allCoordinates = [];
+
+
+            function collectCoordinates(coords) {
+
+                if (typeof coords[0] === "number") {
+
+                    allCoordinates.push(coords);
+
+                } else {
+
+                    coords.forEach(
+                        collectCoordinates
+                    );
+
+                }
+            }
+
+
+            [
+                ghatData,
+                ghatsData,
+                parkingData,
+                amenitiesData,
+                approachData,
+                walkingData
+
+            ].forEach(layer => {
+
+                layer.features.forEach(feature => {
+
+                    if (feature.geometry) {
+
+                        collectCoordinates(
+                            feature.geometry.coordinates
+                        );
+
+                    }
+
+                });
+
+            });
+
+
+            if (allCoordinates.length > 0) {
+
+                const bounds =
+                    new maplibregl.LngLatBounds();
+
+                allCoordinates.forEach(coord => {
+
+                    bounds.extend(coord);
+
+                });
+
+                map.fitBounds(bounds, {
+
+                    padding: 80,
+                    bearing: 90,
+                    pitch: 45,
+
+                    duration: 1500
+
+                });
+
+            }
+
+        });
+
+        
+
+    </script>
+
+</body>
+</html>
